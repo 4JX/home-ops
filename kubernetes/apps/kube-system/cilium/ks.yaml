@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cilium
+spec:
+  # Add ownership labels to every object rendered from this subtree.
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: cilium
+  interval: 1h
+  # This application tree contains the chart source and HelmRelease.
+  path: ./kubernetes/apps/kube-system/cilium/app
+  # Remove objects deleted from Git instead of leaving orphaned infrastructure.
+  prune: true
+  sourceRef:
+    # The FluxInstance bootstrap creates this repository in flux-system.
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: kube-system
+  timeout: 10m
+  # The host bootstrap already installed Cilium. Avoid making Flux's root
+  # reconciliation depend on a CNI workload that is initially adopting itself.
+  wait: false
+---
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cilium-config
+spec:
+  commonMetadata:
+    labels:
+      app.kubernetes.io/name: cilium
+      app.kubernetes.io/component: config
+  dependsOn:
+    # The policy and pool CRs require Cilium's CRDs to exist first.
+    - name: cilium
+  interval: 1h
+  path: ./kubernetes/apps/kube-system/cilium/config
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  targetNamespace: kube-system
+  timeout: 5m
+  # These configuration CRs do not expose a uniform readiness condition.
+  wait: false

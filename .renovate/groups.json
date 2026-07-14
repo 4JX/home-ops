@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Keep Flux Operator charts and manifest bundle aligned",
+      "groupName": "Flux Operator",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "/^ghcr.io\\/controlplaneio-fluxcd\\/charts\\/flux-(operator|instance)$/",
+        "ghcr.io/controlplaneio-fluxcd/flux-operator-manifests"
+      ],
+      "group": {
+        "commitMessageTopic": "{{{groupName}}} group"
+      },
+      "minimumGroupSize": 3
+    }
+  ]
+}

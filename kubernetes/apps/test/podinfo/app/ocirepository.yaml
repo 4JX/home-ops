@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/source.toolkit.fluxcd.io/ocirepository_v1.json
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: podinfo
+spec:
+  # Poll the app-template registry independently of the Git source.
+  interval: 15m
+  # Extract the Helm chart content layer for helm-controller.
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    # Pin the template API used by values in the HelmRelease.
+    tag: 5.0.1
+  url: oci://ghcr.io/bjw-s-labs/helm/app-template

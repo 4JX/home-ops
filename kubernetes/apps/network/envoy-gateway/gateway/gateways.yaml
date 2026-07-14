@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.networking.k8s.io/gateway_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: envoy
+spec:
+  # Select the GatewayClass reconciled by the Envoy Gateway controller.
+  gatewayClassName: envoy
+  listeners:
+    # The listener name is referenced by Podinfo's HTTPRoute sectionName.
+    - name: http
+      protocol: HTTP
+      # Plain HTTP is sufficient for the first LAN test; TLS comes later.
+      port: 80
+      allowedRoutes:
+        namespaces:
+          # Podinfo lives in test while this Gateway lives in network.
+          from: All

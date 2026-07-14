@@ -1,0 +1,90 @@
+# yamllint disable rule:comments
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: "Renovate"
+
+"on":
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: Dry Run
+        default: "false"
+        required: false
+      logLevel:
+        description: Log Level
+        default: debug
+        required: false
+      version:
+        description: Renovate version
+        default: latest
+        required: false
+      force:
+        description: Renovate force config as JSON
+        default: "{}"
+        required: false
+  schedule:
+    # Run every hour
+    - cron: "0 * * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - .renovaterc
+      - .renovate/**.json
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+# Retrieve BOT_USER_ID via `curl -s "https://api.github.com/users/${BOT_USERNAME}%5Bbot%5D" | jq .id`
+env:
+  RENOVATE_PLATFORM: github
+  RENOVATE_PLATFORM_COMMIT: true
+  RENOVATE_ONBOARDING_CONFIG_FILE_NAME: .renovaterc
+  RENOVATE_AUTODISCOVER: true
+  RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
+  RENOVATE_USERNAME: "${{ secrets.BOT_USERNAME }}[bot]"
+  RENOVATE_GIT_AUTHOR: >-
+    ${{ secrets.BOT_USERNAME }} <${{ secrets.BOT_USER_ID }}+${{ secrets.BOT_USERNAME }}[bot]@users.noreply.github.com>
+  WORKFLOW_RENOVATE_DRY_RUN: false
+  WORKFLOW_RENOVATE_LOG_LEVEL: debug
+  WORKFLOW_RENOVATE_VERSION: latest
+  WORKFLOW_RENOVATE_FORCE: "{}"
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: "${{ secrets.BOT_CLIENT_ID }}"
+          private-key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          token: "${{ steps.app-token.outputs.token }}"
+          persist-credentials: false
+
+      - name: Override Default Config
+        shell: bash
+        run: |
+          echo "RENOVATE_DRY_RUN=${RENOVATE_DRY_RUN}" >> "${GITHUB_ENV}"
+          echo "LOG_LEVEL=${LOG_LEVEL}" >> "${GITHUB_ENV}"
+          echo "RENOVATE_FORCE=${RENOVATE_FORCE}" >> "${GITHUB_ENV}"
+        env:
+          RENOVATE_DRY_RUN: ${{ github.event.inputs.dryRun || env.WORKFLOW_RENOVATE_DRY_RUN }}
+          LOG_LEVEL: ${{ github.event.inputs.logLevel || env.WORKFLOW_RENOVATE_LOG_LEVEL }}
+          RENOVATE_FORCE: ${{ github.event.inputs.force || env.WORKFLOW_RENOVATE_FORCE }}
+
+      - name: Renovate
+        uses: renovatebot/github-action@8217b3fc286df088d7c27f3255fe8414463bc0fd # v46.1.15
+        with:
+          configurationFile: "${{ env.RENOVATE_ONBOARDING_CONFIG_FILE_NAME }}"
+          token: "${{ steps.app-token.outputs.token }}"
+          renovate-version: "${{ github.event.inputs.version || env.WORKFLOW_RENOVATE_VERSION }}"
+# yamllint enable rule:comments

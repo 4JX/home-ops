@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "enabled": true,
+  "semanticCommits": "enabled",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    // ":prHourlyLimitNone",
+    // ":prConcurrentLimitNone",
+    ":separateMajorReleases",
+    "docker:enableMajor",
+    "docker:pinDigests",
+    "helpers:pinGitHubActionDigests",
+    "mergeConfidence:all-badges",
+    "github>home-operations/renovate-presets//managers/oci.json5#2.1.0",
+    "local>4JX/home-ops//.renovate/autoMerge.json",
+    "local>4JX/home-ops//.renovate/commitMessage.json",
+    "local>4JX/home-ops//.renovate/groups.json",
+    "local>4JX/home-ops//.renovate/ignore.json",
+    "local>4JX/home-ops//.renovate/labels.json",
+    "local>4JX/home-ops//.renovate/semanticCommits.json"
+  ],
+
+  "schedule": ["at any time"],
+  "vulnerabilityAlerts": { "enabled": true },
+
+  // "automergeType": "pr",
+  // GitHub handles the merge
+  // "platformAutomerge": true,
+  // close superseded PRs when a newer update exists
+  // "pruneStaleBranches": true,
+  // Controls when Renovate rebases an existing branch
+  // https://docs.renovatebot.com/configuration-options/#rebasewhen
+  "rebaseWhen": "auto",
+
+  "nix": {
+    "enabled": true
+  },
+
+  // The built-in Flux manager supports OCIRepository, HelmRelease, and
+  // GitRepository resources. Its default pattern only matches gotk-components;
+  // this repository keeps Flux resources throughout the Kubernetes tree.
+  "flux": {
+    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
+  },
+
+  // Append a table in the commit message body describing all updates in the commit
+  "commitBodyTable": true,
+  // Create PRs to roll back versions if the current version is not found in the registry.
+  "rollbackPrs": true
+}

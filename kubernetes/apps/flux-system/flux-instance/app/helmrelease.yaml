@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flux-instance
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: flux-instance
+  interval: 30m
+  values:
+    instance:
+      distribution:
+        # Renovate updates this OCI artifact through the Flux custom extractor.
+        artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.53.0
+        version: 2.x
+      cluster:
+        networkPolicy: false
+      components:
+        - source-controller
+        - kustomize-controller
+        - helm-controller
+        - notification-controller
+      sync:
+        kind: GitRepository
+        url: https://github.com/4JX/home-ops.git
+        ref: refs/heads/main
+        path: ./kubernetes/apps
+        interval: 1h
+      commonMetadata:
+        labels:
+          app.kubernetes.io/name: flux
+      kustomize:
+        patches:
+          # Reconcile independent objects concurrently and retry dependencies
+          # quickly while the initial application graph becomes ready.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --concurrent=10
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --requeue-dependency=5s
+            target:
+              kind: Deployment
+              name: (kustomize-controller|helm-controller|source-controller)
+          # Leave headroom for rendering charts and larger Kustomize trees.
+          - patch: |-
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: all
+              spec:
+                template:
+                  spec:
+                    containers:
+                      - name: manager
+                        resources:
+                          limits:
+                            memory: 1Gi
+            target:
+              kind: Deployment
+              name: (kustomize-controller|helm-controller|source-controller)
+          # Avoid changes solely because a registry digest moved beneath a tag.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --feature-gates=DisableChartDigestTracking=true
+            target:
+              kind: Deployment
+              name: helm-controller
+          # Stop obsolete health checks when a newer Git revision arrives.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --feature-gates=CancelHealthCheckOnNewRevision=true
+            target:
+              kind: Deployment
+              name: kustomize-controller

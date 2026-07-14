@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/bjw-s-labs/helm-charts/main/charts/other/app-template/schemas/helmrelease-helm-v2.schema.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: podinfo
+spec:
+  # app-template supplies the generic Deployment, Service, and HTTPRoute wiring.
+  chartRef:
+    kind: OCIRepository
+    name: podinfo
+  interval: 30m
+  values:
+    controllers:
+      podinfo:
+        containers:
+          app:
+            image:
+              # Pin the demo workload so a reconciliation cannot change it.
+              repository: ghcr.io/stefanprodan/podinfo
+              tag: 6.9.2
+            args:
+              # Match the process listener to the Service port configured below.
+              - --port=9898
+    route:
+      app:
+        # app-template renders an HTTPRoute attached to the shared Gateway.
+        parentRefs:
+          - name: envoy
+            # Cross-namespace attachment is allowed by the Gateway listener.
+            namespace: network
+            # Bind specifically to the listener named http, not every listener.
+            sectionName: http
+    service:
+      app:
+        ports:
+          http:
+            # Envoy forwards the HTTPRoute backend to this named Service port.
+            port: 9898

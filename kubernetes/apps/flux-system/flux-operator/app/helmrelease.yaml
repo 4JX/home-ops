@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flux-operator
+spec:
+  chartRef:
+    kind: OCIRepository
+    name: flux-operator
+  interval: 30m
+  values:
+    # Match the host bootstrap's initial install while avoiding a policy that
+    # would block the first controller rollout before policy is configured.
+    web:
+      networkPolicy:
+        create: false

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/helm.toolkit.fluxcd.io/helmrelease_v2.json
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+spec:
+  # Resolve the chart from the separately reconciled, pinned OCIRepository.
+  chartRef:
+    kind: OCIRepository
+    name: cilium
+  install:
+    # Install or replace Cilium CRDs before applying chart-managed resources.
+    crds: CreateReplace
+  # Reconcile drift even when neither Git nor the chart version changes.
+  interval: 30m
+  upgrade:
+    # Permit chart upgrades to update existing Cilium CRD definitions.
+    crds: CreateReplace
+  values:
+    # Install routes to pod CIDRs advertised by other nodes without an overlay.
+    autoDirectNodeRoutes: true
+    cgroup:
+      autoMount:
+        # NixOS already mounts cgroup v2 at the path supplied below.
+        enabled: false
+      hostRoot: /sys/fs/cgroup
+    envoy:
+      # Envoy Gateway deploys and manages its own Envoy data-plane proxies.
+      enabled: false
+    hubble:
+      # Observability is useful later but not required to prove the first path.
+      enabled: false
+    ipam:
+      # Let Kubernetes allocate from K3s' configured 10.42.0.0/16 pod CIDR.
+      mode: kubernetes
+    # Native-routing boundary; nix/k3s.nix reads this value and passes it to
+    # K3s as --cluster-cidr, keeping Kubernetes and Cilium single-sourced.
+    ipv4NativeRoutingCIDR: 10.42.0.0/16
+    # This first cluster is a single server, so agents reach the local K3s API.
+    k8sServiceHost: 127.0.0.1
+    k8sServicePort: 6443
+    # Replace kube-proxy's Service rules with Cilium's eBPF implementation.
+    kubeProxyReplacement: true
+    l2announcements:
+      # Advertise the Gateway's LoadBalancer IP to the LAN using ARP.
+      enabled: true
+    operator:
+      # One replica is sufficient while there is only one schedulable node.
+      replicas: 1
+    # Route pod traffic directly; do not encapsulate it in VXLAN or Geneve.
+    routingMode: native
+    socketLB:
+      # Apply socket-level load balancing only to the host namespace; pod
+      # namespaces continue through Cilium's normal per-packet service path.
+      hostNamespaceOnly: true

@@ -1,0 +1,57 @@
+name: Flake Checker
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  generate_matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      checks: ${{ steps.gen_checks.outputs.checks }}
+    steps:
+      - &checkout-step
+        name: Clone Repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - &install-nix-step
+        name: Install nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |-
+            auto-optimise-store = true
+            experimental-features = nix-command flakes
+          install_url: https://releases.nixos.org/nix/nix-2.31.2/install
+
+      - id: gen_checks
+        run: |
+          checks=$(nix flake show --json | jq -c '.checks."x86_64-linux" | keys')
+          printf "checks=%s" "$checks" >> "${GITHUB_OUTPUT}"
+
+  build_checks:
+    needs: [generate_matrix]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        check: ${{ fromJson(needs.generate_matrix.outputs.checks) }}
+    steps:
+      - *checkout-step
+      - *install-nix-step
+
+      - name: Build the check
+        run: nix build .#checks.x86_64-linux.${{ matrix.check }} --no-link
+
+  check_flake:
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    steps:
+      - *checkout-step
+      - *install-nix-step
+
+      - name: Run generic check
+        run: nix flake check --keep-going
