@@ -13,6 +13,10 @@ can work:
 - configuring the host firewall and reverse-path filtering;
 - running the initial Cilium and Flux bootstrap from the host.
 
+The module is opt-in. Set `local.home-ops.enable = true;` in a host
+configuration to enable the k3s service, host tools, firewall rules, and
+bootstrap command.
+
 After bootstrap, Flux owns the Kubernetes resources. NixOS does not continuously
 manage the Cilium Helm release.
 
