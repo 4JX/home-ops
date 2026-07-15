@@ -19,7 +19,7 @@ self-hosted applications.
 
 The current Helm values create:
 
-- one controller containing `ghcr.io/stefanprodan/podinfo:6.9.2`;
+- one controller containing `ghcr.io/stefanprodan/podinfo:6.14.0`;
 - one container listening on port `9898`;
 - one Service exposing that port;
 - one HTTPRoute attached to the `network/envoy` Gateway's `http` listener.
