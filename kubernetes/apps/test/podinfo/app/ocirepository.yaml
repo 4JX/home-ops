@@ -13,4 +13,5 @@ spec:
   ref:
     # Pin the template API used by values in the HelmRelease.
     tag: 5.0.1
+    digest: sha256:70a7cb6766eb468068c2c1700c8450253070dc671a9fbbd1a6346a66545e2b2b
   url: oci://ghcr.io/bjw-s-labs/helm/app-template
