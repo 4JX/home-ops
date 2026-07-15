@@ -28,9 +28,31 @@ let
   bootstrap = pkgs.callPackage ./bootstrap.nix { };
 in
 {
-  options.local.home-ops.enable = lib.mkEnableOption "home-ops k3s integration";
+  options.local.home-ops = {
+    enable = lib.mkEnableOption "home-ops k3s integration";
+
+    kubeconfigUsers = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Users granted read access to the k3s admin kubeconfig.";
+    };
+
+    kubeconfigGroup = lib.mkOption {
+      type = lib.types.str;
+      default = "k3s";
+      description = "Group granted read access to the k3s admin kubeconfig.";
+    };
+  };
 
   config = lib.mkIf cfg.enable {
+    # The k3s admin kubeconfig grants cluster-admin access; only list trusted
+    # local users here. Keep the file root-owned while granting this group read
+    # access so k3s can continue to refresh the file in place. The members
+    # option only adds the names to /etc/group; it does not declare user accounts.
+    users.groups = {
+      "${cfg.kubeconfigGroup}".members = cfg.kubeconfigUsers;
+    };
+
     services.k3s = {
       enable = true;
       # A server runs the control plane and, in this single-node setup, workloads.
@@ -57,7 +79,8 @@ in
         # Cilium's eBPF service handling replaces kube-proxy.
         "--disable-kube-proxy"
         # This file contains cluster-admin credentials; keep it root-readable.
-        "--write-kubeconfig-mode=0600"
+        "--write-kubeconfig-mode=0640"
+        "--write-kubeconfig-group=${cfg.kubeconfigGroup}"
       ];
     };
 

@@ -15,7 +15,21 @@ can work:
 
 The module is opt-in. Set `local.home-ops.enable = true;` in a host
 configuration to enable the k3s service, host tools, firewall rules, and
-bootstrap command.
+bootstrap command. List trusted local administrators in
+`local.home-ops.kubeconfigUsers` to grant them read access to the root-owned
+k3s admin kubeconfig without requiring `sudo` for cluster commands:
+
+```nix
+local.home-ops = {
+  enable = true;
+  kubeconfigUsers = [ "foo" ];
+  # Defaults to "k3s"; customize if this group name is already in use.
+  kubeconfigGroup = "k3s";
+};
+```
+
+The kubeconfig grants unrestricted cluster-admin access, so only add trusted
+users.
 
 After bootstrap, Flux owns the Kubernetes resources. NixOS does not continuously
 manage the Cilium Helm release.
