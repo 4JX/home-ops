@@ -41,7 +41,7 @@ writeShellApplication {
     # merely existing after a failed or interrupted Helm operation.
     release_is_deployed() {
       helm status "$1" --namespace "$2" --output json 2>/dev/null \
-        | yq --exit-status '.info.status == "deployed"' >/dev/null
+        | yq --exit-status '.info.status == "deployed"' >/dev/null 2>&1
     }
 
     # On ordinary boots Flux already owns these releases, so leave them alone.
@@ -57,9 +57,9 @@ writeShellApplication {
     # Extract Cilium's chart reference and values from the Flux-owned manifests.
     yq '.spec.values' ${ciliumHelmRelease} > "$workdir/cilium-values.yaml"
     yq '.spec.values' ${fluxInstanceHelmRelease} > "$workdir/flux-instance-values.yaml"
-    cilium_chart="$(yq --raw-output '.spec.url' ${ciliumOCIRepository})"
-    cilium_version="$(yq --raw-output '.spec.ref.tag' ${ciliumOCIRepository})"
-    flux_operator_artifact="$(yq --raw-output '.spec.values.instance.distribution.artifact' ${fluxInstanceHelmRelease})"
+    cilium_chart="$(yq --unwrapScalar '.spec.url' ${ciliumOCIRepository})"
+    cilium_version="$(yq --unwrapScalar '.spec.ref.tag' ${ciliumOCIRepository})"
+    flux_operator_artifact="$(yq --unwrapScalar '.spec.values.instance.distribution.artifact' ${fluxInstanceHelmRelease})"
     # The Flux charts and manifest bundle use the same release, but the bundle
     # tag has a leading v. Derive the chart version so Renovate updates one
     # source of truth and bootstrap cannot drift from the FluxInstance.
