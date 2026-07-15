@@ -17,7 +17,7 @@ spec:
             image:
               # Pin the demo workload so a reconciliation cannot change it.
               repository: ghcr.io/stefanprodan/podinfo
-              tag: 6.9.2
+              tag: 6.14.0@sha256:0a8aa037137c010a75aed8d3fe56931d0edd3bcd0e55acfb96db11e1e96397b1
             args:
               # Match the process listener to the Service port configured below.
               - --port=9898
