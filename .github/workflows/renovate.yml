@@ -41,7 +41,6 @@ concurrency:
 env:
   RENOVATE_PLATFORM: github
   RENOVATE_PLATFORM_COMMIT: true
-  RENOVATE_ONBOARDING_CONFIG_FILE_NAME: .renovaterc
   RENOVATE_AUTODISCOVER: true
   RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
   RENOVATE_USERNAME: "${{ secrets.BOT_USERNAME }}[bot]"
@@ -84,7 +83,7 @@ jobs:
       - name: Renovate
         uses: renovatebot/github-action@8217b3fc286df088d7c27f3255fe8414463bc0fd # v46.1.15
         with:
-          configurationFile: "${{ env.RENOVATE_ONBOARDING_CONFIG_FILE_NAME }}"
+          configurationFile: .renovaterc
           token: "${{ steps.app-token.outputs.token }}"
           renovate-version: "${{ github.event.inputs.version || env.WORKFLOW_RENOVATE_VERSION }}"
 # yamllint enable rule:comments
