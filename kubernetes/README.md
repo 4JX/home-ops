@@ -13,15 +13,18 @@ to be read in the same order that the cluster starts:
    and creates the HTTP entry point.
 5. [Podinfo](apps/test/podinfo/README.md) provides a small workload used to test
    the entire path.
+6. [Storage smoke](apps/test/storage-smoke/README.md) demonstrates dynamic
+   provisioning and node-local persistence independently of the request path.
 
 ## How the repository is reconciled
 
 The Flux instance points at `./kubernetes/apps`. Its top-level
-`kustomization.yaml` creates three namespaces and five Flux `Kustomization`
-objects. Those objects form this dependency chain:
+`kustomization.yaml` creates three namespaces and six Flux `Kustomization`
+objects. The application objects form this dependency chain:
 
 ```text
 cilium
+  ├─ storage-smoke
   └─ cilium-config
        └─ envoy-gateway
             └─ envoy-gateway-gateway
@@ -65,12 +68,15 @@ flux get kustomizations --all-namespaces
 kubectl get pods --all-namespaces
 kubectl -n network get gateway envoy
 kubectl -n test get httproute,service,pod
+kubectl -n test get pvc
 curl http://192.168.1.120
 ```
 
-No DNS, TLS, secret management, certificate controller, storage, or external
-exposure is involved yet. A successful `curl` proves that the selected core
-technologies work together before those layers are introduced.
+No DNS, TLS, secret management, certificate controller, or external exposure is
+involved yet. A successful `curl` proves that the selected core technologies
+work together. The separate [storage smoke test](apps/test/storage-smoke/README.md)
+exercises k3s' local-path storage without changing Podinfo's known-good request
+path.
 
 ## General references
 
