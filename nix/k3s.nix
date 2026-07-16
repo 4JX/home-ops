@@ -122,6 +122,12 @@ in
           # Endpoint veth names start with lxc; constrain this exception to pods.
           iifname "lxc*" ip saddr ${podCIDR} accept
         '';
+
+        extraInputRules = ''
+          # Allow pod traffic to kubelet
+          ip saddr ${podCIDR} ip daddr 192.168.1.235 \
+            tcp dport 10250 accept comment "K3s pods to kubelet"
+        '';
       };
     };
 
