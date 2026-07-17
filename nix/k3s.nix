@@ -124,9 +124,10 @@ in
         '';
 
         extraInputRules = ''
-          # Allow pod traffic to kubelet
-          ip saddr ${podCIDR} ip daddr 192.168.1.235 \
-            tcp dport 10250 accept comment "K3s pods to kubelet"
+          # Allow Metrics Server, running in a pod, to scrape the kubelet.
+          # Maybe contraint by LAN address?
+          ip saddr ${podCIDR} tcp dport 10250 \
+            accept comment "Pods to kubelet for metrics"
         '';
       };
     };
