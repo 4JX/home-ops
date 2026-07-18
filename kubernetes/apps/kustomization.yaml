@@ -6,5 +6,6 @@ resources:
   # these trees; this root only discovers each cluster concern.
   - ./flux-system
   - ./kube-system
+  - ./media
   - ./network
   - ./test

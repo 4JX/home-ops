@@ -53,11 +53,21 @@ secrets encryption and graceful node shutdown, and disables:
   engine if policies are introduced later;
 - Traefik, because Envoy Gateway is the selected ingress implementation;
 - ServiceLB, because Cilium LB IPAM and L2 announcements provide LoadBalancer
-  addresses.
+  addresses;
+- local-storage, because Flux manages local-path-provisioner and its storage
+  class configuration.
 
-k3s still provides CoreDNS, metrics-server, and local-path-provisioner. Podinfo
-does not require persistent storage, so local-path-provisioner is not exercised
-by the first test.
+k3s still provides CoreDNS and metrics-server. Its packaged local-storage AddOn
+is disabled because Flux owns a configurable local-path-provisioner instance.
+The provisioner allocates dynamic application config volumes below
+`/containers/config/kubernetes` on the NVMe drive. The existing HDD tree at
+`/containers/mediaserver` is exposed separately as one static local volume so
+media and torrent paths remain on the same filesystem for hardlinks.
+
+The k3s systemd unit requires both `/containers/config` and
+`/containers/mediaserver` to be mounted before it starts. This prevents a
+missing disk from silently redirecting writes into an underlying directory on
+the root filesystem.
 
 ## Bootstrap boundary
 

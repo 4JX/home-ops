@@ -1,9 +1,9 @@
 # Local-path storage smoke test
 
-This disposable workload demonstrates how k3s' bundled local-path-provisioner
-dynamically creates node-local persistent storage. The app-template chart
-creates a `128Mi` ReadWriteOnce claim using the `local-path` StorageClass and
-mounts it at `/data` in a small HTTP server.
+This disposable workload demonstrates how the Flux-managed
+local-path-provisioner dynamically creates node-local persistent storage. The
+app-template chart creates a `128Mi` ReadWriteOnce claim using the
+`local-path` StorageClass and mounts it at `/data` in a small HTTP server.
 
 On its first start the container writes a random identifier to `/data/id`. Each
 later pod reads the same file, so the identifier distinguishes pod lifecycle
@@ -29,7 +29,7 @@ kubectl -n test describe pvc storage-smoke
 ```
 
 The PVC should be `Bound` to a dynamically created PV. Inspect that PV to find
-its node affinity and host path:
+its node affinity and local backing path:
 
 ```sh
 PV=$(kubectl -n test get pvc storage-smoke -o jsonpath='{.spec.volumeName}')

@@ -2,23 +2,18 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: storage-smoke
+  name: media-storage
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: storage-smoke
-  dependsOn:
-    # The claim cannot bind until the Flux-owned provisioner is healthy.
-    - name: local-path-provisioner
-      namespace: kube-system
+      app.kubernetes.io/name: media-storage
   interval: 1h
-  path: ./kubernetes/apps/test/storage-smoke/app
+  path: ./kubernetes/apps/media/storage/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: test
+  targetNamespace: media
   timeout: 5m
-  # A failed PVC bind, mount, pod, or Service should fail this smoke test.
   wait: true

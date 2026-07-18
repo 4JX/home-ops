@@ -15,16 +15,21 @@ to be read in the same order that the cluster starts:
    the entire path.
 6. [Storage smoke](apps/test/storage-smoke/README.md) demonstrates dynamic
    provisioning and node-local persistence independently of the request path.
+7. [Media storage](apps/media/storage/README.md) exposes the existing HDD tree
+   as one retained local volume for hardlink-capable workloads.
 
 ## How the repository is reconciled
 
 The Flux instance points at `./kubernetes/apps`. Its top-level
-`kustomization.yaml` creates three namespaces and six Flux `Kustomization`
+`kustomization.yaml` creates four namespaces and eight Flux `Kustomization`
 objects. The application objects form this dependency chain:
 
 ```text
+media-storage
+
 cilium
-  ├─ storage-smoke
+  ├─ local-path-provisioner
+  │  └─ storage-smoke
   └─ cilium-config
        └─ envoy-gateway
             └─ envoy-gateway-gateway
@@ -69,14 +74,17 @@ kubectl get pods --all-namespaces
 kubectl -n network get gateway envoy
 kubectl -n test get httproute,service,pod
 kubectl -n test get pvc
+kubectl get pv media
+kubectl -n media get pvc media
 curl http://192.168.1.120
 ```
 
 No DNS, TLS, secret management, certificate controller, or external exposure is
 involved yet. A successful `curl` proves that the selected core technologies
 work together. The separate [storage smoke test](apps/test/storage-smoke/README.md)
-exercises k3s' local-path storage without changing Podinfo's known-good request
-path.
+exercises Flux-managed local-path storage without changing Podinfo's known-good
+request path. The static media volume represents the existing HDD filesystem
+without letting the dynamic provisioner reorganize it.
 
 ## General references
 

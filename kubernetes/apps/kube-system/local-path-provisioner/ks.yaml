@@ -2,23 +2,20 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: storage-smoke
+  name: local-path-provisioner
 spec:
   commonMetadata:
     labels:
-      app.kubernetes.io/name: storage-smoke
+      app.kubernetes.io/name: local-path-provisioner
   dependsOn:
-    # The claim cannot bind until the Flux-owned provisioner is healthy.
-    - name: local-path-provisioner
-      namespace: kube-system
+    - name: cilium
   interval: 1h
-  path: ./kubernetes/apps/test/storage-smoke/app
+  path: ./kubernetes/apps/kube-system/local-path-provisioner/app
   prune: true
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  targetNamespace: test
+  targetNamespace: kube-system
   timeout: 5m
-  # A failed PVC bind, mount, pod, or Service should fail this smoke test.
   wait: true

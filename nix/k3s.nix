@@ -61,8 +61,10 @@ in
       # Give Kubernetes time to terminate pods cleanly during host shutdown.
       gracefulNodeShutdown.enable = true;
 
-      # Cilium provides LoadBalancer IPs and Envoy Gateway replaces Traefik.
+      # Cilium provides LoadBalancer IPs, Envoy Gateway replaces Traefik, and
+      # Flux owns the configurable local-path-provisioner installation.
       disable = [
+        "local-storage"
         "servicelb"
         "traefik"
       ];
@@ -83,6 +85,22 @@ in
         "--write-kubeconfig-group=${cfg.kubeconfigGroup}"
       ];
     };
+
+    # Never allow k3s to start against an unmounted media disk. Otherwise the
+    # static local PV path could resolve to an ordinary directory on the root
+    # filesystem and accept writes in the wrong place. RequiresMountsFor also
+    # resolves the backing mount when the requested path is a subdirectory.
+    systemd.services.k3s.unitConfig.RequiresMountsFor = [
+      "/containers/config"
+      "/containers/mediaserver"
+    ];
+
+    # local-path-provisioner creates one directory below this allocation root
+    # per dynamic config PVC. Existing Docker config directories remain beside
+    # it and can be migrated one application at a time.
+    systemd.tmpfiles.rules = [
+      "d /containers/config/kubernetes 0755 root root -"
+    ];
 
     # Make kubectl and Helm use the local K3s cluster by default on this host.
     environment.variables.KUBECONFIG = kubeconfig;

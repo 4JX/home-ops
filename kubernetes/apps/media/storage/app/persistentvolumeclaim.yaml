@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/persistentvolumeclaim.json
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media
+  annotations:
+    # Application tree changes must not delete the shared media claim.
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-media
+  volumeName: media
+  resources:
+    requests:
+      storage: 1Ti

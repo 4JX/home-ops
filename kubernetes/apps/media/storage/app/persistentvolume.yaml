@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/v1/persistentvolume.json
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media
+  annotations:
+    # Removing or moving this manifest must never prune the live disk binding.
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  # Local volumes do not enforce capacity; this value participates in binding.
+  capacity:
+    storage: 1Ti
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-media
+  claimRef:
+    name: media
+    namespace: media
+  # Preserve the HDD's existing media/, scripts/, and torrents/ organization.
+  local:
+    path: /containers/mediaserver
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - luna
