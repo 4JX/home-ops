@@ -5,51 +5,55 @@ metadata:
   name: cilium
 spec:
   # Resolve the chart from the separately reconciled, pinned OCIRepository.
+  # https://fluxcd.io/flux/components/helm/helmreleases/
   chartRef:
     kind: OCIRepository
     name: cilium
   install:
-    # Install or replace Cilium CRDs before applying chart-managed resources.
+    # Cilium owns the CRDs needed by its post-install configuration.
     crds: CreateReplace
-  # Reconcile drift even when neither Git nor the chart version changes.
   interval: 30m
   upgrade:
-    # Permit chart upgrades to update existing Cilium CRD definitions.
+    # Keep those CRDs compatible with deliberate chart upgrades.
     crds: CreateReplace
   values:
-    # Install routes to pod CIDRs advertised by other nodes without an overlay.
+    # Chart values: https://docs.cilium.io/en/stable/helm-values/
+    # Use direct node routes instead of an overlay network.
+    # https://docs.cilium.io/en/stable/network/concepts/routing/
     autoDirectNodeRoutes: true
     cgroup:
+      # NixOS already mounts cgroup v2 on the host.
       autoMount:
-        # NixOS already mounts cgroup v2 at the path supplied below.
         enabled: false
       hostRoot: /sys/fs/cgroup
     envoy:
-      # Envoy Gateway deploys and manages its own Envoy data-plane proxies.
+      # Envoy Gateway manages the HTTP data plane separately.
       enabled: false
     hubble:
-      # Observability is useful later but not required to prove the first path.
+      # Hubble is not part of the initial cluster surface.
       enabled: false
     ipam:
-      # Let Kubernetes allocate from K3s' configured 10.42.0.0/16 pod CIDR.
+      # Use the Kubernetes node PodCIDRs allocated by k3s.
       mode: kubernetes
-    # Native-routing boundary; nix/k3s.nix reads this value and passes it to
-    # K3s as --cluster-cidr, keeping Kubernetes and Cilium single-sourced.
+    # nix/k3s.nix reads this as K3s' --cluster-cidr.
+    # https://docs.cilium.io/en/stable/network/concepts/routing/
     ipv4NativeRoutingCIDR: 10.42.0.0/16
-    # This first cluster is a single server, so agents reach the local K3s API.
+    # The single node exposes the local k3s API to Cilium agents.
     k8sServiceHost: 127.0.0.1
     k8sServicePort: 6443
-    # Replace kube-proxy's Service rules with Cilium's eBPF implementation.
+    # Replace k3s' kube-proxy.
+    # https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/
     kubeProxyReplacement: true
     l2announcements:
-      # Advertise the Gateway's LoadBalancer IP to the LAN using ARP.
+      # Advertise LoadBalancer IPs on the LAN with ARP.
+      # https://docs.cilium.io/en/stable/network/l2-announcements/
       enabled: true
     operator:
-      # One replica is sufficient while there is only one schedulable node.
+      # One replica is sufficient for the single-node cluster.
       replicas: 1
-    # Route pod traffic directly; do not encapsulate it in VXLAN or Geneve.
+    # Route pod traffic natively; do not encapsulate it.
+    # https://docs.cilium.io/en/stable/network/concepts/routing/
     routingMode: native
     socketLB:
-      # Apply socket-level load balancing only to the host namespace; pod
-      # namespaces continue through Cilium's normal per-packet service path.
+      # Keep socket load-balancing limited to the host namespace.
       hostNamespaceOnly: true

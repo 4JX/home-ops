@@ -8,6 +8,7 @@ spec:
     labels:
       app.kubernetes.io/name: local-path-provisioner
   dependsOn:
+    # Wait for cluster networking before starting the provisioner.
     - name: cilium
   interval: 1h
   path: ./kubernetes/apps/kube-system/local-path-provisioner/app

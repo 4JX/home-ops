@@ -7,9 +7,7 @@
 let
   cfg = config.local.home-ops;
   ciliumHelmRelease = ../kubernetes/apps/kube-system/cilium/app/helmrelease.yaml;
-  # Nix does not evaluate YAML natively. The Cilium value is deliberately a
-  # simple scalar, so extract that one line at evaluation time and fail loudly
-  # if the manifest ever contains zero or multiple definitions.
+  # Keep K3s' cluster CIDR in sync with Cilium's Helm values.
   podCIDR =
     let
       lines = pkgs.lib.splitString "\n" (builtins.readFile ciliumHelmRelease);
@@ -23,7 +21,6 @@ let
       throw "home-ops: expected exactly one ipv4NativeRoutingCIDR in ${toString ciliumHelmRelease}"
     else
       builtins.elemAt (builtins.match "^[[:space:]]*ipv4NativeRoutingCIDR:[[:space:]]*([^[:space:]#]+)[[:space:]]*$" (builtins.head candidates)) 0;
-  # K3s writes the administrator kubeconfig here once its API server is ready.
   kubeconfig = "/etc/rancher/k3s/k3s.yaml";
   bootstrap = pkgs.callPackage ./bootstrap.nix { };
 in
@@ -45,24 +42,19 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # The k3s admin kubeconfig grants cluster-admin access; only list trusted
-    # local users here. Keep the file root-owned while granting this group read
-    # access so k3s can continue to refresh the file in place. The members
-    # option only adds the names to /etc/group; it does not declare user accounts.
+    # This kubeconfig grants cluster-admin access; list trusted users only.
     users.groups = {
       "${cfg.kubeconfigGroup}".members = cfg.kubeconfigUsers;
     };
 
     services.k3s = {
+      # NixOS k3s options: https://search.nixos.org/options?channel=unstable&query=services.k3s
       enable = true;
-      # A server runs the control plane and, in this single-node setup, workloads.
       role = "server";
 
-      # Give Kubernetes time to terminate pods cleanly during host shutdown.
       gracefulNodeShutdown.enable = true;
 
-      # Cilium provides LoadBalancer IPs, Envoy Gateway replaces Traefik, and
-      # Flux owns the configurable local-path-provisioner installation.
+      # Cilium, Envoy Gateway, and Flux-managed storage replace these addons.
       disable = [
         "local-storage"
         "servicelb"
@@ -70,80 +62,66 @@ in
       ];
 
       extraFlags = [
-        # Use the same pod network that Cilium reads above for Kubernetes Node
-        # PodCIDRs and for the native-routing firewall exception.
+        # Cilium supplies the CNI and uses the same pod CIDR for native routing.
+        # https://docs.k3s.io/networking/basic-network-options#custom-cni
         "--cluster-cidr=${podCIDR}"
-        # Encrypt Kubernetes Secret data before it reaches the local datastore.
+        # Keep Kubernetes Secret data encrypted in the local datastore.
         "--secrets-encryption"
-        # Cilium is the CNI, so neither Flannel nor K3s' policy controller is used.
+        # Disable k3s networking and policy components replaced by Cilium.
         "--flannel-backend=none"
         "--disable-network-policy"
-        # Cilium's eBPF service handling replaces kube-proxy.
+        # Cilium provides kube-proxy replacement with eBPF service handling.
+        # https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/
         "--disable-kube-proxy"
-        # This file contains cluster-admin credentials; keep it root-readable.
+        # Keep the admin kubeconfig root-owned while sharing group read access.
         "--write-kubeconfig-mode=0640"
         "--write-kubeconfig-group=${cfg.kubeconfigGroup}"
       ];
     };
 
-    # Never allow k3s to start against an unmounted media disk. Otherwise the
-    # static local PV path could resolve to an ordinary directory on the root
-    # filesystem and accept writes in the wrong place. RequiresMountsFor also
-    # resolves the backing mount when the requested path is a subdirectory.
+    # Do not start k3s unless both backing filesystems are mounted.
     systemd.services.k3s.unitConfig.RequiresMountsFor = [
       "/containers/config"
       "/containers/mediaserver"
     ];
 
-    # local-path-provisioner creates one directory below this allocation root
-    # per dynamic config PVC. Existing Docker config directories remain beside
-    # it and can be migrated one application at a time.
+    # Dynamic config PVCs are allocated below this NVMe-backed path.
     systemd.tmpfiles.rules = [
       "d /containers/config/kubernetes 0755 root root -"
     ];
 
-    # Make kubectl and Helm use the local K3s cluster by default on this host.
     environment.variables.KUBECONFIG = kubeconfig;
 
     environment.systemPackages = with pkgs; [
-      # K3s administrative binary, useful for inspecting the local service.
       k3s
-      # Core Kubernetes API client and Helm chart client.
       kubectl
       kubernetes-helm
-      # Cilium and Flux-specific diagnostics and reconciliation commands.
       cilium-cli
       fluxcd
-      # Manually run this once k3s is ready to install Cilium and Flux.
       bootstrap
-      # Lightweight interactive inspection and structured-output helpers.
       k9s
       jq
       yq-go
     ];
 
+    # Native Cilium routing needs exceptions to strict reverse-path filtering.
     networking = {
-      # The reverse-path exceptions below are expressed as native nftables rules.
       nftables.enable = true;
       firewall = {
-        # Retain strict reverse-path filtering, but exempt Cilium-owned traffic.
         checkReversePath = true;
         logReversePathDrops = true;
 
-        # Scope this to the management/LAN interface on the final host.
         allowedTCPPorts = [ 6443 ];
 
         extraReversePathFilterRules = ''
-          # Cilium host devices carry traffic whose return route may differ from
-          # the interface on which it arrived, which strict RPF would reject.
+          # Cilium host devices can receive traffic whose return route differs.
           iifname { "cilium_host", "cilium_net" } accept
-          # Endpoint veth names start with lxc; constrain this exception to pods.
+          # Limit the pod exception to Cilium endpoint veths and the pod CIDR.
           iifname "lxc*" ip saddr ${podCIDR} accept
         '';
 
         extraInputRules = ''
-          # Allow Metrics Server, running in a pod, to scrape the kubelet.
-          # Maybe contraint by LAN address?
+          # Metrics Server runs in a pod and scrapes the kubelet.
           ip saddr ${podCIDR} tcp dport 10250 \
             accept comment "Pods to kubelet for metrics"
         '';

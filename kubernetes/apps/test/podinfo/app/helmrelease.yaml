@@ -4,7 +4,7 @@ kind: HelmRelease
 metadata:
   name: podinfo
 spec:
-  # app-template supplies the generic Deployment, Service, and HTTPRoute wiring.
+  # app-template values: https://bjw-s-labs.github.io/helm-charts/docs/app-template/reference/
   chartRef:
     kind: OCIRepository
     name: podinfo
@@ -15,28 +15,25 @@ spec:
         containers:
           app:
             image:
-              # Pin the demo workload so a reconciliation cannot change it.
               repository: ghcr.io/stefanprodan/podinfo
               tag: 6.14.0@sha256:0a8aa037137c010a75aed8d3fe56931d0edd3bcd0e55acfb96db11e1e96397b1
-            # The image provides ./podinfo as CMD rather than ENTRYPOINT.
-            # Kubernetes args replace CMD when no command is specified.
+            # Set the image's CMD explicitly so the listener is predictable.
             command:
               - ./podinfo
             args:
-              # Match the process listener to the Service port configured below.
+              # Podinfo listens on 9898, which is also the Service port below.
               - --port=9898
     route:
       app:
-        # app-template renders an HTTPRoute attached to the shared Gateway.
         parentRefs:
+          # Attach to the shared Gateway in the network namespace.
+          # https://gateway-api.sigs.k8s.io/api-types/httproute/
           - name: envoy
-            # Cross-namespace attachment is allowed by the Gateway listener.
             namespace: network
-            # Bind specifically to the listener named http, not every listener.
             sectionName: http
     service:
       app:
         ports:
           http:
-            # Envoy forwards the HTTPRoute backend to this named Service port.
+            # app-template routes this named Service port from the HTTPRoute.
             port: 9898

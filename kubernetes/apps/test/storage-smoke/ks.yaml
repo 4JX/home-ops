@@ -8,7 +8,7 @@ spec:
     labels:
       app.kubernetes.io/name: storage-smoke
   dependsOn:
-    # The claim cannot bind until the Flux-owned provisioner is healthy.
+    # The PVC must wait for the Flux-managed provisioner.
     - name: local-path-provisioner
       namespace: kube-system
   interval: 1h
@@ -20,5 +20,4 @@ spec:
     namespace: flux-system
   targetNamespace: test
   timeout: 5m
-  # A failed PVC bind, mount, pod, or Service should fail this smoke test.
   wait: true

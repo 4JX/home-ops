@@ -8,7 +8,7 @@ spec:
     labels:
       app.kubernetes.io/name: podinfo
   dependsOn:
-    # The HTTPRoute needs an accepted Gateway and listener to attach to.
+    # The generated HTTPRoute attaches to this already-programmed Gateway.
     - name: envoy-gateway-gateway
       namespace: network
   interval: 1h
@@ -20,5 +20,4 @@ spec:
     namespace: flux-system
   targetNamespace: test
   timeout: 5m
-  # Make the test fail visibly unless the workload and route become healthy.
   wait: true

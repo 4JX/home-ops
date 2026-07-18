@@ -5,7 +5,7 @@ metadata:
   name: lan-pool
 spec:
   blocks:
-    # A one-address pool is enough for the shared Envoy Gateway. .120 sits on
-    # the LAN subnet but outside the router's DHCP range (.128 through .254).
+    # Keep this VIP outside the router's DHCP range.
+    # https://docs.cilium.io/en/stable/network/lb-ipam/
     - start: 192.168.1.120
       stop: 192.168.1.120

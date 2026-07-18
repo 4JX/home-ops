@@ -3,5 +3,4 @@ kind: Namespace
 metadata:
   name: flux-system
   annotations:
-    # Keep the bootstrap namespace even if the Flux app tree is pruned.
     kustomize.toolkit.fluxcd.io/prune: disabled

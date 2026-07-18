@@ -9,7 +9,8 @@ spec:
       app.kubernetes.io/name: flux-operator
   interval: 1h
   path: ./kubernetes/apps/flux-system/flux-operator/app
-  # Never remove the bootstrap controller during a repository reorganization.
+  # Keep the bootstrap controller during tree changes.
+  # https://fluxcd.io/flux/components/kustomize/kustomizations/
   prune: false
   sourceRef:
     kind: GitRepository
@@ -17,5 +18,4 @@ spec:
     namespace: flux-system
   targetNamespace: flux-system
   timeout: 5m
-  # The bootstrap already installed this release before Flux started.
   wait: false

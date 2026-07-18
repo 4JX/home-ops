@@ -5,14 +5,14 @@ metadata:
   name: envoy-gateway
 spec:
   # Resolve the controller chart from the pinned OCIRepository below.
+  # Chart values: https://gateway.envoyproxy.io/docs/install/gateway-helm-api/
   chartRef:
     kind: OCIRepository
     name: envoy-gateway
   install:
-    # Gateway API and Envoy Gateway CRDs must precede controller resources.
+    # The controller chart manages its Gateway API CRDs.
     crds: CreateReplace
-  # Periodically correct drift even when Git is unchanged.
   interval: 30m
   upgrade:
-    # Allow a deliberate chart bump to update those CRD definitions.
+    # Update CRDs when the pinned controller chart changes.
     crds: CreateReplace

@@ -4,9 +4,7 @@ kind: OCIRepository
 metadata:
   name: cilium
 spec:
-  # Poll the registry independently of Git for the pinned chart artifact.
   interval: 15m
-  # Extract the Helm content layer from the OCI artifact for helm-controller.
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy

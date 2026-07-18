@@ -8,13 +8,16 @@ spec:
     kind: OCIRepository
     name: flux-instance
   interval: 30m
+  # Bootstrap reads these values before Flux is running.
   values:
     instance:
       distribution:
-        # Renovate updates this OCI artifact through the Flux custom extractor.
+        # The operator manifest bundle supplies the Flux controller release.
+        # Flux Instance chart docs: https://fluxoperator.dev/docs/charts/flux-instance/
         artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.55.0
         version: 2.x
       cluster:
+        # No cluster policies exist yet for the bootstrap controllers.
         networkPolicy: false
       components:
         - source-controller
@@ -22,6 +25,8 @@ spec:
         - helm-controller
         - notification-controller
       sync:
+        # Flux watches this Git source and reconciles only the apps tree.
+        # https://fluxcd.io/flux/components/source/gitrepositories/
         kind: GitRepository
         url: https://github.com/4JX/home-ops.git
         ref: refs/heads/main
@@ -31,9 +36,10 @@ spec:
         labels:
           app.kubernetes.io/name: flux
       kustomize:
+        # Tune controller behavior for the small, dependency-heavy bootstrap.
+        # Controller configuration: https://fluxoperator.dev/docs/instance/controllers/
         patches:
-          # Reconcile independent objects concurrently and retry dependencies
-          # quickly while the initial application graph becomes ready.
+          # Keep independent reconciliations moving while dependencies settle.
           - patch: |-
               - op: add
                 path: /spec/template/spec/containers/0/args/-
@@ -44,7 +50,7 @@ spec:
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
-          # Leave headroom for rendering charts and larger Kustomize trees.
+          # Leave rendering headroom for Helm and Kustomize output.
           - patch: |-
               apiVersion: apps/v1
               kind: Deployment
@@ -61,7 +67,7 @@ spec:
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
-          # Avoid changes solely because a registry digest moved beneath a tag.
+          # Treat pinned chart tags as stable instead of tracking digest moves.
           - patch: |-
               - op: add
                 path: /spec/template/spec/containers/0/args/-
@@ -69,7 +75,7 @@ spec:
             target:
               kind: Deployment
               name: helm-controller
-          # Stop obsolete health checks when a newer Git revision arrives.
+          # Cancel health checks made obsolete by a newer Git revision.
           - patch: |-
               - op: add
                 path: /spec/template/spec/containers/0/args/-

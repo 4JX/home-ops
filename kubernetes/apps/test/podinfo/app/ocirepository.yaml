@@ -4,14 +4,11 @@ kind: OCIRepository
 metadata:
   name: podinfo
 spec:
-  # Poll the app-template registry independently of the Git source.
   interval: 15m
-  # Extract the Helm chart content layer for helm-controller.
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
   ref:
-    # Pin the template API used by values in the HelmRelease.
     tag: 5.0.1
     digest: sha256:70a7cb6766eb468068c2c1700c8450253070dc671a9fbbd1a6346a66545e2b2b
   url: oci://ghcr.io/bjw-s-labs/helm/app-template

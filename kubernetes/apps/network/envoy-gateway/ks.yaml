@@ -8,7 +8,7 @@ spec:
     labels:
       app.kubernetes.io/name: envoy-gateway
   dependsOn:
-    # Wait for Cilium's LoadBalancer pool and L2 announcement policy.
+    # Cilium must provide the LoadBalancer pool before this controller starts.
     - name: cilium-config
       namespace: kube-system
   interval: 1h
@@ -20,7 +20,6 @@ spec:
     namespace: flux-system
   targetNamespace: network
   timeout: 5m
-  # Do not create the Gateway until the controller deployment is healthy.
   wait: true
 ---
 # yaml-language-server: $schema=https://k8s-schemas.home-operations.com/kustomize.toolkit.fluxcd.io/kustomization_v1.json
@@ -33,7 +32,7 @@ spec:
     labels:
       app.kubernetes.io/name: envoy-gateway
   dependsOn:
-    # GatewayClass and Gateway require the controller's CRDs to be established.
+    # Apply the Gateway only after Envoy Gateway's CRDs and controller exist.
     - name: envoy-gateway
   interval: 1h
   path: ./kubernetes/apps/network/envoy-gateway/gateway
@@ -44,5 +43,4 @@ spec:
     namespace: flux-system
   targetNamespace: network
   timeout: 5m
-  # Surface failure if the Gateway is not accepted and programmed.
   wait: true

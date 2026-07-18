@@ -5,4 +5,5 @@ metadata:
   name: envoy
 spec:
   # This identifier tells Kubernetes that Envoy Gateway owns this class.
+  # https://gateway.envoyproxy.io/docs/tasks/traffic/gatewayapi-support/
   controllerName: gateway.envoyproxy.io/gatewayclass-controller

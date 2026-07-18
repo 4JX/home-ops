@@ -9,8 +9,8 @@ spec:
     name: flux-operator
   interval: 30m
   values:
-    # Match the host bootstrap's initial install while avoiding a policy that
-    # would block the first controller rollout before policy is configured.
+    # Leave network policy disabled until the initial controller rollout works.
+    # Flux Operator chart docs: https://fluxoperator.dev/docs/charts/flux-operator/
     web:
       networkPolicy:
         create: false

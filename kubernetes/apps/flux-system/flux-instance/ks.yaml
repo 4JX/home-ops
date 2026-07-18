@@ -8,10 +8,12 @@ spec:
     labels:
       app.kubernetes.io/name: flux-instance
   dependsOn:
+    # FluxInstance is reconciled by the operator installed first.
     - name: flux-operator
   interval: 1h
   path: ./kubernetes/apps/flux-system/flux-instance/app
-  # Never remove the controller lifecycle resource during a tree move.
+  # Keep the bootstrap lifecycle resource during tree changes.
+  # https://fluxcd.io/flux/components/kustomize/kustomizations/
   prune: false
   sourceRef:
     kind: GitRepository
@@ -19,5 +21,5 @@ spec:
     namespace: flux-system
   targetNamespace: flux-system
   timeout: 5m
-  # FluxInstance starts controllers asynchronously after Helm applies it.
+  # FluxInstance creates the controllers asynchronously.
   wait: false

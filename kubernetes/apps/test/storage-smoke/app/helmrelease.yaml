@@ -11,7 +11,7 @@ spec:
   values:
     controllers:
       storage-smoke:
-        # Recreate makes the single-writer volume hand-off explicit on updates.
+        # The PVC is ReadWriteOnce and the workload is disposable.
         strategy: Recreate
         pod:
           securityContext:
@@ -29,6 +29,7 @@ spec:
               - /bin/sh
               - -c
             args:
+              # Persist the ID on the PVC so pod replacement is observable.
               - |-
                 set -eu
                 mkdir -p /data/www
@@ -43,6 +44,7 @@ spec:
                 } > /data/www/index.html
                 exec httpd -f -p 8080 -h /data/www
             probes:
+              # The generated /id endpoint is valid only after the PVC is mounted.
               liveness:
                 enabled: true
                 custom: true
@@ -71,6 +73,8 @@ spec:
                   - ALL
     persistence:
       data:
+        # This is node-local test storage, not replicated storage.
+        # https://kubernetes.io/docs/concepts/storage/persistent-volumes/
         type: persistentVolumeClaim
         accessMode: ReadWriteOnce
         size: 128Mi

@@ -4,7 +4,6 @@ kind: CiliumL2AnnouncementPolicy
 metadata:
   name: lan
 spec:
-  # Announce assigned LoadBalancer addresses, but not Service externalIPs.
-  # With no selectors or interface regexes, all eligible services and devices
-  # participate; this can be narrowed when the final host interface is known.
+  # Announce allocated LoadBalancer IPs, not arbitrary externalIPs.
+  # https://docs.cilium.io/en/stable/network/l2-announcements/
   loadBalancerIPs: true

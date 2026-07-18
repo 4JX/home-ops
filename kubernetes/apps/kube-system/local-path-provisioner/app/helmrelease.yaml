@@ -8,6 +8,7 @@ spec:
     kind: OCIRepository
     name: local-path-provisioner
   interval: 30m
+  # Values: https://github.com/rancher/local-path-provisioner/blob/master/deploy/chart/local-path-provisioner/values.yaml
   values:
     fullnameOverride: local-path-provisioner
     configmap:
@@ -19,10 +20,12 @@ spec:
       repository: ghcr.io/home-operations/busybox
       tag: 1.38.0@sha256:7e2c04dd50ede647bf4a7a4c8dbd629dd4971cd139b9b88fb22bfc3c7a6c13df
     nodePathMap:
+      # Dynamic claims use the NVMe-backed config filesystem.
       - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
         paths:
           - /containers/config/kubernetes
     priorityClassName: system-node-critical
+    # The provisioner does not need root privileges on the host.
     podSecurityContext:
       runAsNonRoot: true
     securityContext:
@@ -40,10 +43,13 @@ spec:
       limits:
         memory: 64Mi
     storageClass:
+      # Keep the k3s-compatible StorageClass for existing claims.
+      # https://kubernetes.io/docs/concepts/storage/storage-classes/
       create: true
       defaultClass: true
       defaultVolumeType: local
       name: local-path
       provisionerName: rancher.io/local-path
       reclaimPolicy: Delete
+      # Wait until a consuming pod selects the node for this local volume.
       volumeBindingMode: WaitForFirstConsumer

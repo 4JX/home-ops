@@ -4,5 +4,4 @@ kind: Namespace
 metadata:
   name: media
   annotations:
-    # Keep the namespace that owns the claim for the pre-existing HDD tree.
     kustomize.toolkit.fluxcd.io/prune: disabled

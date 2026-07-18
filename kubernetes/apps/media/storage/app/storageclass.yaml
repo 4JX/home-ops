@@ -3,7 +3,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: local-media
-# This class describes one administrator-provisioned disk; it never creates PVs.
+# This class binds the administrator-provisioned PV; it never creates one.
+# https://kubernetes.io/docs/concepts/storage/storage-classes/
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Retain
 volumeBindingMode: Immediate

@@ -15,7 +15,6 @@
 
       flake = {
         nixosModules = {
-          # Minimal host-side K3s and bootstrap module for the new cluster.
           home-ops = ./nix;
         };
       };
@@ -26,7 +25,6 @@
 
     parts.url = "github:hercules-ci/flake-parts";
 
-    # Project wide formatting
     treefmt-nix.url = "github:numtide/treefmt-nix";
   };
 }
