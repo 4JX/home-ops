@@ -7,3 +7,10 @@ spec:
   # This identifier tells Kubernetes that Envoy Gateway owns this class.
   # https://gateway.envoyproxy.io/docs/tasks/traffic/gatewayapi-support/
   controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    # Link to the EnvoyProxy resource that configures the data-plane
+    # proxy pods (replicas, resources, service policy, shutdown).
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: envoy
+    namespace: network

@@ -21,11 +21,33 @@ spec:
     # Use direct node routes instead of an overlay network.
     # https://docs.cilium.io/en/stable/network/concepts/routing/
     autoDirectNodeRoutes: true
+    bandwidthManager:
+      # Use eBPF fair queuing instead of host-level TC qdiscs.
+      # https://docs.cilium.io/en/stable/network/kubernetes/bandwidth-manager/
+      enabled: true
+      # Switch TCP congestion control from CUBIC to BBR for lower latency
+      # and better throughput on networks with any bufferbloat.
+      bbr: true
+    bpf:
+      # Perform source NAT in BPF instead of falling back to iptables.
+      # https://docs.cilium.io/en/stable/network/concepts/masquerading/
+      masquerade: true
+      # Pre-allocate BPF map memory at startup to avoid latency spikes
+      # when new connections hit an unallocated entry.
+      preallocateMaps: true
     cgroup:
       # NixOS already mounts cgroup v2 on the host.
       autoMount:
         enabled: false
       hostRoot: /sys/fs/cgroup
+    cni:
+      # Allow other CNI plugins (e.g. Multus) to coexist without Cilium
+      # deleting their configuration from /etc/cni/net.d/ on startup.
+      exclusive: false
+    # Allow the kernel to use segments up to 4 MB internally and only
+    # split them at the NIC via hardware offload (requires kernel 6.3+).
+    # https://docs.cilium.io/en/stable/network/kubernetes/performance/
+    enableIPv4BIGTCP: true
     envoy:
       # Envoy Gateway manages the HTTP data plane separately.
       enabled: false
@@ -48,12 +70,45 @@ spec:
       # Advertise LoadBalancer IPs on the LAN with ARP.
       # https://docs.cilium.io/en/stable/network/l2-announcements/
       enabled: true
+    loadBalancer:
+      # Use consistent hashing so the same source IP always reaches the
+      # same backend, improving cache hit rates without session affinity.
+      # https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#maglev-consistent-hashing
+      algorithm: maglev
+      # Direct Server Return: responses bypass the LB node and go
+      # straight to the client, halving LB bandwidth for large replies.
+      mode: dsr
     operator:
       # One replica is sufficient for the single-node cluster.
       replicas: 1
+    # Automatically rolling-restart DaemonSet pods when the Cilium
+    # ConfigMap changes, instead of requiring a manual rollout.
+    rollOutCiliumPods: true
     # Route pod traffic natively; do not encapsulate it.
     # https://docs.cilium.io/en/stable/network/concepts/routing/
     routingMode: native
+    # Explicitly list the Linux capabilities each Cilium container needs.
+    # Prevents future chart upgrades from silently adding new capabilities.
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - PERFMON
+          - BPF
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN
+          - SYS_RESOURCE
     socketLB:
       # Keep socket load-balancing limited to the host namespace.
       hostNamespaceOnly: true

@@ -25,12 +25,13 @@ spec:
         - helm-controller
         - notification-controller
       sync:
-        # Flux watches this Git source and reconciles only the apps tree.
+        # Flux syncs the cluster entrypoint, which injects HelmRelease defaults
+        # before reconciling the apps tree.
         # https://fluxcd.io/flux/components/source/gitrepositories/
         kind: GitRepository
         url: https://github.com/4JX/home-ops.git
         ref: refs/heads/main
-        path: ./kubernetes/apps
+        path: ./kubernetes/flux/cluster
         interval: 1h
       commonMetadata:
         labels:
@@ -63,7 +64,7 @@ spec:
                       - name: manager
                         resources:
                           limits:
-                            memory: 1Gi
+                            memory: 2Gi
             target:
               kind: Deployment
               name: (kustomize-controller|helm-controller|source-controller)
@@ -83,3 +84,45 @@ spec:
             target:
               kind: Deployment
               name: kustomize-controller
+          # Build kustomizations in memory instead of writing to disk.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --concurrent=20
+              - op: replace
+                path: /spec/template/spec/volumes/0
+                value:
+                  name: temp
+                  emptyDir:
+                    medium: Memory
+            target:
+              kind: Deployment
+              name: kustomize-controller
+          # Cache Helm chart downloads between reconciliation cycles.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --helm-cache-max-size=10
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --helm-cache-ttl=60m
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --helm-cache-purge-interval=5m
+            target:
+              kind: Deployment
+              name: source-controller
+          # Gracefully shed load when the helm-controller approaches OOM.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --feature-gates=OOMWatch=true
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --oom-watch-memory-threshold=95
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --oom-watch-interval=500ms
+            target:
+              kind: Deployment
+              name: helm-controller

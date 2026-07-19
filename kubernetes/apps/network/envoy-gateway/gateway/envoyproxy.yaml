@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy
+spec:
+  logging:
+    level:
+      default: info
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        # One proxy replica is sufficient for the single-node cluster.
+        replicas: 1
+        container:
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              # Cap proxy memory to prevent runaway growth from large
+              # request bodies or connection surges.
+              memory: 2Gi
+      envoyService:
+        # Route traffic only to the local node so the proxy sees real
+        # client IPs instead of cluster-internal SNAT addresses.
+        externalTrafficPolicy: Local
+  shutdown:
+    # Drain active connections gracefully before the pod is killed
+    # during upgrades or rescheduling.
+    drainTimeout: 60s

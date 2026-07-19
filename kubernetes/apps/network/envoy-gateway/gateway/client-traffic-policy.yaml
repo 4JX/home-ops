@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: envoy
+spec:
+  clientIPDetection:
+    xForwardedFor:
+      # Trust X-Forwarded-For headers only from pods inside the cluster
+      # CIDR; reject spoofed headers from external clients.
+      trustedCIDRs:
+        - 10.42.0.0/16
+  # Apply this policy to every Gateway in the namespace.
+  targetSelectors:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+  # Send periodic TCP keepalive probes on idle client connections.
+  tcpKeepalive: {}
+  timeout:
+    http:
+      # Close idle client connections after 60 seconds.
+      idleTimeout: 60s

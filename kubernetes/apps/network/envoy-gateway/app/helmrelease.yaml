@@ -16,3 +16,16 @@ spec:
   upgrade:
     # Update CRDs when the pinned controller chart changes.
     crds: CreateReplace
+  values:
+    config:
+      envoyGateway:
+        extensionApis:
+          # Enable Backend resources for BackendTrafficPolicy and
+          # ClientTrafficPolicy CRDs.
+          enableBackend: true
+        provider:
+          type: Kubernetes
+          kubernetes:
+            deploy:
+              # Place proxy pods in the same namespace as the Gateway.
+              type: GatewayNamespace

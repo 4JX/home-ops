@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://k8s-schemas.home-operations.com/gateway.envoyproxy.io/backendtrafficpolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: envoy
+spec:
+  compressor:
+    # Compress HTTP responses at the proxy so individual apps do not
+    # need to implement compression themselves.
+    - type: Zstd
+      zstd: {}
+    - type: Brotli
+      brotli: {}
+    - type: Gzip
+      gzip: {}
+  retry:
+    # Retry requests that fail with a TCP connection reset (e.g. during
+    # a rolling update), making pod replacements invisible to clients.
+    numRetries: 2
+    retryOn:
+      triggers:
+        - reset
+  # Apply this policy to every Gateway in the namespace.
+  targetSelectors:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+  # Send periodic TCP keepalive probes on idle backend connections to
+  # prevent firewalls from silently dropping them.
+  tcpKeepalive: {}
+  timeout:
+    http:
+      # Close idle backend connections after 15 seconds.
+      connectionIdleTimeout: 15s
+      # No global request timeout; let individual apps decide.
+      requestTimeout: 0s
