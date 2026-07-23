@@ -14,7 +14,7 @@ spec:
       distribution:
         # The operator manifest bundle supplies the Flux controller release.
         # Flux Instance chart docs: https://fluxoperator.dev/docs/charts/flux-instance/
-        artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.55.0
+        artifact: oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:v0.56.0
         version: 2.x
       cluster:
         # No cluster policies exist yet for the bootstrap controllers.
