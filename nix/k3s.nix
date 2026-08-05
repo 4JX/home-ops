@@ -100,7 +100,9 @@ in
       fluxcd
       bootstrap
       k9s
+      age
       jq
+      sops
       yq-go
     ];
 

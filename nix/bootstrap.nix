@@ -24,10 +24,45 @@ writeShellApplication {
   text = ''
     export KUBECONFIG=${kubeconfig}
 
+    sopsAgeKeyFile=""
+    while (($# > 0)); do
+      case "$1" in
+        --sops-age-key-file)
+          if (($# < 2)); then
+            echo "--sops-age-key-file requires a path" >&2
+            exit 2
+          fi
+          sopsAgeKeyFile="$2"
+          shift 2
+          ;;
+        *)
+          echo "unknown argument: $1" >&2
+          exit 2
+          ;;
+      esac
+    done
+
     if [[ "$EUID" -ne 0 ]]; then
       echo "home-ops-bootstrap must be run as root" >&2
       exit 1
     fi
+
+    ensure_sops_key() {
+      if [[ -z "$sopsAgeKeyFile" ]]; then
+        return 0
+      fi
+      if [[ ! -r "$sopsAgeKeyFile" ]]; then
+        echo "SOPS age key is not readable: $sopsAgeKeyFile" >&2
+        exit 1
+      fi
+
+      kubectl create secret generic sops-age \
+        --namespace flux-system \
+        --from-file=identity.agekey="$sopsAgeKeyFile" \
+        --dry-run=client \
+        --output yaml \
+        | kubectl apply --filename -
+    }
 
     # Wait for API readiness.
     until kubectl get --raw=/readyz >/dev/null 2>&1; do
@@ -43,6 +78,7 @@ writeShellApplication {
     if release_is_deployed cilium kube-system \
       && release_is_deployed flux-operator flux-system \
       && release_is_deployed flux-instance flux-system; then
+      ensure_sops_key
       exit 0
     fi
 
@@ -75,6 +111,10 @@ writeShellApplication {
       --set web.networkPolicy.create=false \
       --wait \
       --timeout 5m
+
+    # The key must exist before Flux creates kustomize-controller with its
+    # global SOPS decryption flag.
+    ensure_sops_key
 
     kubectl wait \
       --for=condition=Established \

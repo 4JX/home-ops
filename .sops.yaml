@@ -1,0 +1,12 @@
+keys:
+  # Personal recipient: permits local editing of encrypted manifests.
+  - &infinity age14cyrlharjqa44tul328cr5gxyj7pxut6zgz8e5el3x3s99f2xujspa0m9e
+  # Replace this placeholder with a dedicated cluster age public key.
+  - &home_ops_cluster age1m7tmx38dwvhrqrmjpkfgfyqxmfumg4kw73xnnyjx0xh8px09gsjqlzjme5
+creation_rules:
+  - path_regex: kubernetes/.+\.sops\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    key_groups:
+      - age:
+          - *infinity
+          - *home_ops_cluster

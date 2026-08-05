@@ -84,6 +84,15 @@ spec:
             target:
               kind: Deployment
               name: kustomize-controller
+          # Let every Flux Kustomization decrypt SOPS age-encrypted Secrets
+          # using the bootstrap-provided key in flux-system.
+          - patch: |-
+              - op: add
+                path: /spec/template/spec/containers/0/args/-
+                value: --sops-age-secret=sops-age
+            target:
+              kind: Deployment
+              name: kustomize-controller
           # Build kustomizations in memory instead of writing to disk.
           - patch: |-
               - op: add
