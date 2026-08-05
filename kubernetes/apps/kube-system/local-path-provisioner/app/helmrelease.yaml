@@ -50,6 +50,6 @@ spec:
       defaultVolumeType: local
       name: local-path
       provisionerName: rancher.io/local-path
-      reclaimPolicy: Delete
+      reclaimPolicy: Retain
       # Wait until a consuming pod selects the node for this local volume.
       volumeBindingMode: WaitForFirstConsumer
