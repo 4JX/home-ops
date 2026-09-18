@@ -6,7 +6,7 @@ on:
 
 jobs:
   generate_matrix:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       checks: ${{ steps.gen_checks.outputs.checks }}
     steps:
@@ -33,7 +33,7 @@ jobs:
 
   build_checks:
     needs: [generate_matrix]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       max-parallel: 5
@@ -48,7 +48,7 @@ jobs:
 
   check_flake:
     continue-on-error: true
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - *checkout-step
       - *install-nix-step
