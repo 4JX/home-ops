@@ -12,7 +12,7 @@
     "docker:pinDigests",
     "helpers:pinGitHubActionDigests",
     "mergeConfidence:all-badges",
-    "github>home-operations/renovate-presets//managers/oci.json5#2.1.0",
+    "github>home-operations/renovate-presets//managers/oci.json5#8.1.0",
     "local>4JX/home-ops//.renovate/autoMerge.json",
     "local>4JX/home-ops//.renovate/commitMessage.json",
     "local>4JX/home-ops//.renovate/groups.json",
